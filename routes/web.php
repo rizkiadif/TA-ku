@@ -14,7 +14,7 @@
 Route::get('/login', 'LoginController@login')->name('login');
 Route::post('/login', 'LoginController@proses_login');
 
-Route::group(['middleware'=>'auth'], function() {
+Route::group(['middleware' => 'auth'], function () {
 
 	Route::get('/pakar', 'LoginController@index');
 	Route::get('/logout', 'LoginController@logout');
@@ -74,6 +74,7 @@ Route::get('/diagnosa', 'KonsultasiController@diagnosa_g');
 Route::get('/print-diagnosa', 'KonsultasiController@print');
 Route::get('/penyakit', 'KonsultasiController@penyakit');
 Route::get('/selesai', 'KonsultasiController@selesai');
+Route::get('/hasil_analisa', 'KonsultasiController@hasil_analisa');
 
 Route::get('/penyakit/gejala', 'GejalaController@index');
 // Route::get('admin/pasien', 'pasienController@index');

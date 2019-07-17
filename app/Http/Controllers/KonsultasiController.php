@@ -16,6 +16,7 @@ use App\HDiagnosa;
 use App\RbGejala;
 use App\RbPenyakit;
 use App\Settingan;
+use App\RbAnalisaHasil;
 
 class KonsultasiController extends Controller
 {
@@ -76,6 +77,23 @@ class KonsultasiController extends Controller
         ];
 
         return view('konsultasi.konsultasi', $data);
+    }
+
+    public function hasil_analisa(Request $r)
+    {
+        $analisa = new RbAnalisaHasil;
+        $analisa->nama = session('nama');
+        $analisa->alamat = session('alamat');
+        $analisa->no_telp = session('no_telp');
+        $analisa->jenis_kelamin = session('jenis_sapi');
+        $analisa->penyakit = $r->penyakit;
+        $analisa->waktu = Carbon::now();
+        $analisa->save();
+
+        $data = [
+            'penyakit' => RbPenyakit::find($r->penyakit)
+        ];
+        return view('konsultasi.hasil_analisa', $data);
     }
 
     public function diagnosa(Request $r)
@@ -173,7 +191,7 @@ class KonsultasiController extends Controller
     public function selesai()
     {
         session()->flush();
-        return redirect('/');
+        return redirect('/konsul');
     }
 
     public function penyakit()
