@@ -9,14 +9,15 @@
                 <tr>
                     <th>No</th>
                     <th>Penyakit</th>
-                    <th>Deskripsi</th>
+                    <th>Keterangan</th>
+                    <th>Solusi</th>
                 </tr>
                 @foreach($penyakits as $penyakit)
                 <tr>
                     <td>{{$no++}}</td>
                     <td>{{$penyakit->penyakit}}</td>
-                    <td>{{$penyakit->deskripsi}}</td>
-                    <td><img src="{{$penyakit->img}}" alt=""></td>
+                    <td>{{$penyakit->keterangan}}</td>
+                    <td>{{$penyakit->solusi}}</td>
                 </tr>
                 @endforeach
             </table>

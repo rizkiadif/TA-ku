@@ -4,10 +4,8 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Login extends Model
+class RbPenyakit extends Model
 {
-    protected $table="login";
-	protected $primaryKey = 'id';
+    protected $table = 'rb_penyakit';
     public $timestamps = false;
-
 }
