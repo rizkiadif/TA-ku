@@ -14,6 +14,9 @@ use App\Diagnosa;
 use Carbon\Carbon;
 use App\HDiagnosa;
 use App\RbGejala;
+use App\RbPenyakit;
+use App\Settingan;
+use App\RbAnalisaHasil;
 
 class KonsultasiController extends Controller
 {
@@ -26,7 +29,7 @@ class KonsultasiController extends Controller
 
     public function index()
     {
-        if(!is_null(session('nama', null)))
+        if (!is_null(session('nama', null)))
             return redirect('/konsultasi');
 
         return view('konsultasi.index');
@@ -57,18 +60,46 @@ class KonsultasiController extends Controller
 
     public function konsultasi_g(Request $r)
     {
+        if (!isset($r->pertanyaan)) {
+            $pertanyaan_pertama = Settingan::find(1);
+            // dd($pertanyaan_pertama);
+            $id = $pertanyaan_pertama->id_pertanyaan;
+            $pertanyaan = RbGejala::where('id', $id)->first();
+        } else {
+            $first_two = substr($r->pertanyaan, 0, 2);
+            if ($first_two == "PK") {
+                return redirect('/hasil_analisa?penyakit=' . $r->pertanyaan);
+            }
+            $pertanyaan = RbGejala::where('id', $r->pertanyaan)->first();
+        }
         $data = [
-            'gejala'=>RbGejala::all(),
-            'no'=>1
+            'question' => $pertanyaan,
         ];
-        dd($data['gejala']);
+
         return view('konsultasi.konsultasi', $data);
+    }
+
+    public function hasil_analisa(Request $r)
+    {
+        $analisa = new RbAnalisaHasil;
+        $analisa->nama = session('nama');
+        $analisa->alamat = session('alamat');
+        $analisa->no_telp = session('no_telp');
+        $analisa->jenis_kelamin = session('jenis_sapi');
+        $analisa->penyakit = $r->penyakit;
+        $analisa->waktu = Carbon::now();
+        $analisa->save();
+
+        $data = [
+            'penyakit' => RbPenyakit::find($r->penyakit)
+        ];
+        return view('konsultasi.hasil_analisa', $data);
     }
 
     public function diagnosa(Request $r)
     {
         // dd(session()->all());
-        if(count($r->gejala) == 0) {
+        if (count($r->gejala) == 0) {
             return redirect('/konsultasi')->with(['status' => 'harus memilih minimal satu gejala']);
         }
 
@@ -77,9 +108,8 @@ class KonsultasiController extends Controller
         $diagnosa->id_pasien = session('id');
         $diagnosa->tanggal = Carbon::now();
         $diagnosa->save();
-        
-        foreach($r->gejala as $gejala)
-        {
+
+        foreach ($r->gejala as $gejala) {
             $h_diagnosa = new HDiagnosa();
             $h_diagnosa->id_gejala = $gejala;
             $h_diagnosa->id_diagnosa = $diagnosa->id;
@@ -102,28 +132,27 @@ class KonsultasiController extends Controller
 
     public function diagnosa_g()
     {
-        $diagnosa = Diagnosa::where(['id_pasien'=>session('id')])->latest('tanggal')->first();
+        $diagnosa = Diagnosa::where(['id_pasien' => session('id')])->latest('tanggal')->first();
 
         // dd($diagnosa);
         $h_diagnosa = HDiagnosa::where('id_diagnosa', $diagnosa->id)->get();
-        
+
         $list_gejala = [];
-        foreach($h_diagnosa as $diag) 
-        {
+        foreach ($h_diagnosa as $diag) {
             array_push($list_gejala, $diag->id_gejala);
         }
 
         $in = join(',', $list_gejala);
-        
-        $cf_diagnosa = DB::select(DB::raw('select id_penyakit, penyakit, sum(cf) as faktor_kepastian from relasi, penyakit where id_gejala in ('.$in.') and penyakit.id=relasi.id_penyakit group by id_penyakit, penyakit order by faktor_kepastian desc'));
+
+        $cf_diagnosa = DB::select(DB::raw('select id_penyakit, penyakit, sum(cf) as faktor_kepastian from relasi, penyakit where id_gejala in (' . $in . ') and penyakit.id=relasi.id_penyakit group by id_penyakit, penyakit order by faktor_kepastian desc'));
 
         $data = [
-            'no'=>1,
-            'no1'=>1,
-            'cf_diagnosa'=>$cf_diagnosa,
-            'penyakit'=>Penyakit::find($cf_diagnosa[0]->id_penyakit),
-            'gejala'=>Gejala::whereIn('id', $list_gejala)->get(),
-            'solusi'=>Aturan::where('id_penyakit', $cf_diagnosa[0]->id_penyakit)->first()->solusi
+            'no' => 1,
+            'no1' => 1,
+            'cf_diagnosa' => $cf_diagnosa,
+            'penyakit' => Penyakit::find($cf_diagnosa[0]->id_penyakit),
+            'gejala' => Gejala::whereIn('id', $list_gejala)->get(),
+            'solusi' => Aturan::where('id_penyakit', $cf_diagnosa[0]->id_penyakit)->first()->solusi
         ];
 
         return view('konsultasi.diagnosa', $data);
@@ -132,30 +161,29 @@ class KonsultasiController extends Controller
     public function print()
     {
 
-        $diagnosa = Diagnosa::where(['id_pasien'=>session('id')])->latest('tanggal')->first();
+        $diagnosa = Diagnosa::where(['id_pasien' => session('id')])->latest('tanggal')->first();
 
         // dd($diagnosa);
         $h_diagnosa = HDiagnosa::where('id_diagnosa', $diagnosa->id)->get();
-        
+
         $list_gejala = [];
-        foreach($h_diagnosa as $diag) 
-        {
+        foreach ($h_diagnosa as $diag) {
             array_push($list_gejala, $diag->id_gejala);
         }
 
         $in = join(',', $list_gejala);
-        
-        $cf_diagnosa = DB::select(DB::raw('select id_penyakit, penyakit, sum(cf) as faktor_kepastian from relasi, penyakit where id_gejala in ('.$in.') and penyakit.id=relasi.id_penyakit group by id_penyakit, penyakit order by faktor_kepastian desc'));
+
+        $cf_diagnosa = DB::select(DB::raw('select id_penyakit, penyakit, sum(cf) as faktor_kepastian from relasi, penyakit where id_gejala in (' . $in . ') and penyakit.id=relasi.id_penyakit group by id_penyakit, penyakit order by faktor_kepastian desc'));
 
         $data = [
-            'no'=>1,
-            'no1'=>1,
-            'cf_diagnosa'=>$cf_diagnosa,
-            'penyakit'=>Penyakit::find($cf_diagnosa[0]->id_penyakit),
-            'gejala'=>Gejala::whereIn('id', $list_gejala)->get(),
-            'solusi'=>Aturan::where('id_penyakit', $cf_diagnosa[0]->id_penyakit)->first()->solusi
+            'no' => 1,
+            'no1' => 1,
+            'cf_diagnosa' => $cf_diagnosa,
+            'penyakit' => Penyakit::find($cf_diagnosa[0]->id_penyakit),
+            'gejala' => Gejala::whereIn('id', $list_gejala)->get(),
+            'solusi' => Aturan::where('id_penyakit', $cf_diagnosa[0]->id_penyakit)->first()->solusi
         ];
-        
+
         $pdf = \PDF::loadView('konsultasi.print', $data);
         return $pdf->stream();
     }
@@ -163,14 +191,14 @@ class KonsultasiController extends Controller
     public function selesai()
     {
         session()->flush();
-        return redirect('/');
+        return redirect('/konsul');
     }
 
     public function penyakit()
     {
         $data = [
-            'penyakits'=>Penyakit::all(),
-            'no'=>1
+            'penyakits' => RbPenyakit::all(),
+            'no' => 1
         ];
         return view('konsultasi.penyakit', $data);
     }
@@ -178,7 +206,7 @@ class KonsultasiController extends Controller
     {
         return view('konsultasi.tentang');
     }
-    
+
     /**
      * Show the form for creating a new resource.
      *
@@ -245,4 +273,3 @@ class KonsultasiController extends Controller
         //
     }
 }
-
