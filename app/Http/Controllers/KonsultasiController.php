@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use App\HDiagnosa;
 use App\RbGejala;
 use App\RbPenyakit;
+use App\Settingan;
 
 class KonsultasiController extends Controller
 {
@@ -58,11 +59,22 @@ class KonsultasiController extends Controller
 
     public function konsultasi_g(Request $r)
     {
+        if (!isset($r->pertanyaan)) {
+            $pertanyaan_pertama = Settingan::find(1);
+            // dd($pertanyaan_pertama);
+            $id = $pertanyaan_pertama->id_pertanyaan;
+            $pertanyaan = RbGejala::where('id', $id)->first();
+        } else {
+            $first_two = substr($r->pertanyaan, 0, 2);
+            if ($first_two == "PK") {
+                return redirect('/hasil_analisa?penyakit=' . $r->pertanyaan);
+            }
+            $pertanyaan = RbGejala::where('id', $r->pertanyaan)->first();
+        }
         $data = [
-            'gejala' => RbGejala::all(),
-            'no' => 1
+            'question' => $pertanyaan,
         ];
-        dd($data['gejala']);
+
         return view('konsultasi.konsultasi', $data);
     }
 
